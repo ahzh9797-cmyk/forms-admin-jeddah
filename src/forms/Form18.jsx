@@ -1,199 +1,371 @@
 import React, { useState } from 'react'
-import FormHeader from '../components/FormHeader'
 import EmployeeSearch from '../components/EmployeeSearch'
-import SignatureStamp from '../components/SignatureStamp'
-
-const VIOLATION_TYPES = [
-  { id: 'late', label: 'تأخر عن الدوام' },
-  { id: 'early_leave', label: 'الانصراف المبكر' },
-  { id: 'absent', label: 'الغياب' },
-  { id: 'leave_without', label: 'مغادرة دون إذن' },
-]
 
 export default function Form18() {
   const [employee, setEmployee] = useState(null)
   const [formData, setFormData] = useState({
-    date: new Date().toLocaleDateString('ar-SA'),
-    violation_type: '',
+    // Header
+    school: '',
+    date: '',
+    // Section 1 — المدير
+    violation: '', // 'late' | 'early'
+    violation_day: '',
     violation_date: '',
     violation_time: '',
-    duration: '',
-    notes: '',
-    school_name: '',
-    period: '',
+    // Section 3 — رأي المدير
+    director_decision: '', // 'accept' | 'reject'
+    director_name: '',
   })
 
-  const set = (field, value) => setFormData(prev => ({ ...prev, [field]: value }))
+  const set = (f, v) => setFormData(p => ({ ...p, [f]: v }))
+
+  const DAYS = ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس']
 
   return (
-    <div>
-      {/* Search Panel */}
-      <EmployeeSearch onEmployeeFound={setEmployee} label="ابحث عن الموظف برقم الهوية الوطنية" />
+    <div dir="rtl">
+      {/* ── Controls (hidden on print) ── */}
+      <div className="no-print bg-green-50 border border-green-200 rounded-xl p-4 mb-5 space-y-4">
+        <EmployeeSearch onEmployeeFound={setEmployee} label="ابحث عن الموظف برقم الهوية الوطنية" />
 
-      {/* School name input */}
-      <div className="no-print mb-4 flex gap-4">
-        <div className="flex-1">
-          <label className="block text-sm font-bold text-gray-700 mb-1">اسم المدرسة</label>
-          <input
-            className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
-            value={formData.school_name}
-            onChange={e => set('school_name', e.target.value)}
-            placeholder="اسم المدرسة..."
-          />
-        </div>
-        <div className="flex-1">
-          <label className="block text-sm font-bold text-gray-700 mb-1">نوع المخالفة</label>
-          <select
-            className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
-            value={formData.violation_type}
-            onChange={e => set('violation_type', e.target.value)}
-          >
-            <option value="">-- اختر نوع المخالفة --</option>
-            {VIOLATION_TYPES.map(v => (
-              <option key={v.id} value={v.label}>{v.label}</option>
-            ))}
-          </select>
-        </div>
-        <div className="flex-1">
-          <label className="block text-sm font-bold text-gray-700 mb-1">تاريخ المخالفة</label>
-          <input
-            type="date"
-            className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
-            value={formData.violation_date}
-            onChange={e => set('violation_date', e.target.value)}
-          />
-        </div>
-        <div className="flex-1">
-          <label className="block text-sm font-bold text-gray-700 mb-1">المدة (دقيقة/ساعة)</label>
-          <input
-            className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
-            value={formData.duration}
-            onChange={e => set('duration', e.target.value)}
-            placeholder="مثال: 45 دقيقة"
-          />
-        </div>
-      </div>
-
-      {/* Print Button */}
-      <div className="no-print mb-4 flex justify-end">
-        <button
-          onClick={() => window.print()}
-          className="bg-green-700 hover:bg-green-800 text-white px-8 py-2 rounded-lg font-bold text-sm"
-        >
-          طباعة النموذج
-        </button>
-      </div>
-
-      {/* ===== PRINTABLE FORM ===== */}
-      <div className="form-page official-form bg-white shadow-lg rounded-lg p-8 max-w-3xl mx-auto text-sm" style={{ direction: 'rtl' }}>
-        <FormHeader
-          formNumber="18"
-          formTitle="نموذج مساءلة تأخر / انصراف"
-        />
-
-        {/* Header info row */}
-        <div className="flex justify-between items-start mb-4 text-xs">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div>
-            التاريخ: <span className="underline-field px-3">{formData.date}</span>
+            <label className="block text-xs font-bold text-gray-700 mb-1">اسم المدرسة</label>
+            <input className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm" value={formData.school} onChange={e => set('school', e.target.value)} placeholder="..." />
           </div>
           <div>
-            المدرسة: <span className="underline-field px-3">{formData.school_name || '_______________'}</span>
-          </div>
-        </div>
-
-        {/* Employee Data */}
-        <div className="border-2 border-gray-700 rounded mb-4">
-          <div className="bg-green-800 text-white text-center py-1 font-bold text-xs">بيانات الموظف</div>
-          <table className="form-table text-xs">
-            <tbody>
-              <tr>
-                <td className="font-bold bg-gray-50 w-1/4">الاسم الكامل</td>
-                <td className="w-3/4">{employee?.full_name || employee?.name || '___________________________'}</td>
-              </tr>
-              <tr>
-                <td className="font-bold bg-gray-50">رقم الهوية</td>
-                <td>{employee?.id_number || '___________________________'}</td>
-              </tr>
-              <tr>
-                <td className="font-bold bg-gray-50">الوظيفة</td>
-                <td>{employee?.job_title || employee?.position || '___________________________'}</td>
-              </tr>
-              <tr>
-                <td className="font-bold bg-gray-50">رقم الجوال</td>
-                <td>{employee?.phone || employee?.mobile || '___________________________'}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        {/* Violation Details */}
-        <div className="border-2 border-gray-700 rounded mb-4">
-          <div className="bg-green-800 text-white text-center py-1 font-bold text-xs">تفاصيل المخالفة</div>
-          <table className="form-table text-xs">
-            <tbody>
-              <tr>
-                <td className="font-bold bg-gray-50 w-1/3">نوع المخالفة</td>
-                <td>
-                  {formData.violation_type || (
-                    <span className="text-gray-400">_______________</span>
-                  )}
-                </td>
-              </tr>
-              <tr>
-                <td className="font-bold bg-gray-50">تاريخ المخالفة</td>
-                <td>{formData.violation_date || '_______________'}</td>
-              </tr>
-              <tr>
-                <td className="font-bold bg-gray-50">المدة</td>
-                <td>{formData.duration || '_______________'}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        {/* Accountability Text */}
-        <div className="border-2 border-gray-700 rounded mb-4 p-3">
-          <div className="font-bold text-xs mb-2 text-center bg-green-800 text-white py-1 -mx-3 -mt-3 mb-3">نص المساءلة</div>
-          <p className="text-xs leading-7 text-justify">
-            بناءً على صلاحياتي، تمت مساءلة الموظف&nbsp;
-            <span className="font-bold underline">{employee?.full_name || employee?.name || '___________________'}</span>
-            &nbsp;وذلك بسبب&nbsp;
-            <span className="font-bold underline">{formData.violation_type || '___________________'}</span>
-            &nbsp;بتاريخ&nbsp;
-            <span className="font-bold underline">{formData.violation_date || '___________'}</span>
-            &nbsp;لمدة&nbsp;
-            <span className="font-bold underline">{formData.duration || '___________'}</span>.
-            وقد أُشعر الموظف بهذه المخالفة وطُلب منه الالتزام بأنظمة الدوام الرسمي.
-          </p>
-        </div>
-
-        {/* Notes */}
-        <div className="border border-gray-400 rounded mb-6 p-2">
-          <div className="font-bold text-xs mb-1">ملاحظات إضافية:</div>
-          <div className="text-xs min-h-12 leading-6">{formData.notes || '...'}</div>
-        </div>
-
-        {/* Signatures */}
-        <div className="grid grid-cols-3 gap-6 text-center text-xs mt-6 border-t border-gray-300 pt-4">
-          <div>
-            <div className="font-bold mb-8">توقيع الموظف</div>
-            <div className="border-b border-gray-500 mb-1">___________________</div>
-            <div>التاريخ: ___________</div>
+            <label className="block text-xs font-bold text-gray-700 mb-1">تاريخ النموذج</label>
+            <input type="date" className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm" value={formData.date} onChange={e => set('date', e.target.value)} />
           </div>
           <div>
-            <div className="font-bold mb-8">توقيع المشرف / الوكيل</div>
-            <div className="border-b border-gray-500 mb-1">___________________</div>
-            <div>التاريخ: ___________</div>
+            <label className="block text-xs font-bold text-gray-700 mb-1">يوم المخالفة</label>
+            <select className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm" value={formData.violation_day} onChange={e => set('violation_day', e.target.value)}>
+              <option value="">--</option>
+              {DAYS.map(d => <option key={d}>{d}</option>)}
+            </select>
           </div>
           <div>
-            <div className="font-bold mb-4">مدير المدرسة</div>
-            <div className="stamp-box mx-auto mb-1" style={{ width: 90, height: 70 }}>
-              <span className="text-gray-300 text-xs">الختم الرسمي</span>
+            <label className="block text-xs font-bold text-gray-700 mb-1">تاريخ المخالفة</label>
+            <input type="date" className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm" value={formData.violation_date} onChange={e => set('violation_date', e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1">نوع المخالفة</label>
+            <div className="flex gap-4 mt-1">
+              <label className="flex items-center gap-1 text-sm cursor-pointer">
+                <input type="radio" name="vtype" checked={formData.violation === 'late'} onChange={() => set('violation', 'late')} /> تأخر
+              </label>
+              <label className="flex items-center gap-1 text-sm cursor-pointer">
+                <input type="radio" name="vtype" checked={formData.violation === 'early'} onChange={() => set('violation', 'early')} /> انصراف مبكر
+              </label>
             </div>
-            <div className="border-b border-gray-500">___________________</div>
           </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1">الوقت</label>
+            <input type="time" className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm" value={formData.violation_time} onChange={e => set('violation_time', e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1">اسم المدير</label>
+            <input className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm" value={formData.director_name} onChange={e => set('director_name', e.target.value)} placeholder="..." />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1">قرار المدير</label>
+            <div className="flex gap-4 mt-1">
+              <label className="flex items-center gap-1 text-sm cursor-pointer">
+                <input type="radio" name="dec" checked={formData.director_decision === 'accept'} onChange={() => set('director_decision', 'accept')} /> قبول
+              </label>
+              <label className="flex items-center gap-1 text-sm cursor-pointer">
+                <input type="radio" name="dec" checked={formData.director_decision === 'reject'} onChange={() => set('director_decision', 'reject')} /> رفض
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end">
+          <button onClick={() => window.print()} className="bg-green-700 hover:bg-green-800 text-white px-8 py-2 rounded-lg font-bold text-sm">
+            طباعة النموذج
+          </button>
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════════
+          PRINTABLE OFFICIAL FORM — نموذج 18
+      ══════════════════════════════════════ */}
+      <div
+        className="form-page official-form bg-white mx-auto text-black"
+        style={{
+          direction: 'rtl',
+          width: '210mm',
+          minHeight: '297mm',
+          padding: '12mm 16mm',
+          fontSize: '12pt',
+          fontFamily: "'Cairo', 'Noto Naskh Arabic', Arial, sans-serif",
+          boxSizing: 'border-box',
+          boxShadow: '0 2px 16px #0002',
+          borderRadius: 8,
+        }}
+      >
+        {/* ── Page Header ── */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6, borderBottom: '2px solid #000', paddingBottom: 6 }}>
+          {/* Right block */}
+          <div style={{ fontSize: 9, lineHeight: 1.7, textAlign: 'right' }}>
+            <div style={{ fontWeight: 700 }}>المملكة العربية السعودية</div>
+            <div>وزارة التعليم</div>
+            <div>إدارة التعليم بمحافظة جدة</div>
+            <div>مدرسة: <span style={{ borderBottom: '1px solid #000', paddingRight: 4, paddingLeft: 40 }}>{formData.school}</span></div>
+          </div>
+
+          {/* Center logo */}
+          <div style={{ textAlign: 'center', flex: '0 0 auto' }}>
+            <svg viewBox="0 0 80 80" style={{ width: 64, height: 64 }}>
+              <circle cx="40" cy="40" r="38" fill="none" stroke="#006633" strokeWidth="2"/>
+              <text x="40" y="34" textAnchor="middle" fontSize="8" fill="#006633" fontWeight="bold">وزارة</text>
+              <text x="40" y="44" textAnchor="middle" fontSize="8" fill="#006633" fontWeight="bold">التعليم</text>
+              <text x="40" y="54" textAnchor="middle" fontSize="6.5" fill="#006633">المملكة العربية السعودية</text>
+            </svg>
+          </div>
+
+          {/* Left block */}
+          <div style={{ fontSize: 9, lineHeight: 1.7, textAlign: 'left' }}>
+            <div>رقم النموذج: <strong>18</strong></div>
+            <div>التاريخ: <span style={{ borderBottom: '1px solid #000', paddingLeft: 30 }}>
+              {formData.date ? new Date(formData.date).toLocaleDateString('ar-SA') : ''}
+            </span></div>
+          </div>
+        </div>
+
+        {/* ── Form Title ── */}
+        <div style={{ textAlign: 'center', margin: '8px 0 10px' }}>
+          <div style={{
+            display: 'inline-block',
+            background: '#006633',
+            color: '#fff',
+            fontWeight: 700,
+            fontSize: 13,
+            padding: '4px 40px',
+            borderRadius: 4,
+            letterSpacing: 1,
+          }}>
+            نموذج مساءلة تأخر / انصراف مبكر
+          </div>
+        </div>
+
+        {/* ── Employee Row ── */}
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 8, fontSize: 10 }}>
+          <tbody>
+            <tr>
+              <td style={tdLabel}>اسم الموظف</td>
+              <td style={tdValue}>{employee?.full_name || employee?.name || ''}</td>
+              <td style={tdLabel}>رقم الهوية</td>
+              <td style={tdValue}>{employee?.id_number || ''}</td>
+              <td style={tdLabel}>الوظيفة</td>
+              <td style={tdValue}>{employee?.job_title || employee?.position || ''}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* ══════════════════════════════
+            SECTION 1 — قسم المدير
+        ══════════════════════════════ */}
+        <SectionTitle>القسم الأول: إشعار المدير</SectionTitle>
+
+        <div style={{ border: '1.5px solid #000', borderRadius: 4, padding: '8px 10px', marginBottom: 10, fontSize: 10 }}>
+          <p style={{ margin: '0 0 8px', lineHeight: 2 }}>
+            السيد / السيدة الموظف/ة الموقر/ة، يُشعركم بأنه قد رُصد عليكم ما يلي:
+          </p>
+
+          {/* Checkboxes row */}
+          <div style={{ display: 'flex', gap: 32, alignItems: 'center', marginBottom: 10 }}>
+            {/* تأخر */}
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'default' }}>
+              <CheckBox checked={formData.violation === 'late'} />
+              <span style={{ fontWeight: 700 }}>تأخر عن الدوام</span>
+            </label>
+            {/* انصراف مبكر */}
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'default' }}>
+              <CheckBox checked={formData.violation === 'early'} />
+              <span style={{ fontWeight: 700 }}>انصراف مبكر</span>
+            </label>
+          </div>
+
+          {/* Day / Date / Time */}
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10 }}>
+            <tbody>
+              <tr>
+                <td style={{ padding: '4px 6px', fontWeight: 700, width: '15%' }}>اليوم</td>
+                <td style={{ padding: '4px 6px', borderBottom: '1px solid #555', width: '18%' }}>{formData.violation_day}</td>
+                <td style={{ padding: '4px 6px', fontWeight: 700, width: '15%' }}>التاريخ</td>
+                <td style={{ padding: '4px 6px', borderBottom: '1px solid #555', width: '22%' }}>
+                  {formData.violation_date ? new Date(formData.violation_date).toLocaleDateString('ar-SA') : ''}
+                </td>
+                <td style={{ padding: '4px 6px', fontWeight: 700, width: '12%' }}>الوقت</td>
+                <td style={{ padding: '4px 6px', borderBottom: '1px solid #555', width: '18%' }}>{formData.violation_time}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* Director signature inside section 1 */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10, gap: 40, fontSize: 10 }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontWeight: 700, marginBottom: 4 }}>توقيع المدير</div>
+              <div style={{ borderBottom: '1px solid #555', width: 120, height: 18 }} />
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontWeight: 700, marginBottom: 4 }}>التاريخ</div>
+              <div style={{ borderBottom: '1px solid #555', width: 100, height: 18 }} />
+            </div>
+          </div>
+        </div>
+
+        {/* ══════════════════════════════
+            SECTION 2 — رد الموظف
+        ══════════════════════════════ */}
+        <SectionTitle>القسم الثاني: رد الموظف / الموظفة</SectionTitle>
+
+        <div style={{ border: '1.5px solid #000', borderRadius: 4, padding: '8px 10px', marginBottom: 10, fontSize: 10 }}>
+          <p style={{ margin: '0 0 6px' }}>
+            يُرجى كتابة ردكم / عذركم فيما يتعلق بالمخالفة المشار إليها أعلاه:
+          </p>
+          {/* Writing lines */}
+          {[1, 2, 3].map(i => (
+            <div key={i} style={{ borderBottom: '1px solid #aaa', marginBottom: 12, height: 22 }} />
+          ))}
+
+          {/* Employee signature */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 10 }}>
+            <div>
+              <span style={{ fontWeight: 700 }}>اسم الموظف / الموظفة: </span>
+              <span style={{ borderBottom: '1px solid #555', display: 'inline-block', width: 180 }} />
+            </div>
+            <div style={{ display: 'flex', gap: 32 }}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontWeight: 700, marginBottom: 4 }}>التوقيع</div>
+                <div style={{ borderBottom: '1px solid #555', width: 110, height: 18 }} />
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontWeight: 700, marginBottom: 4 }}>التاريخ</div>
+                <div style={{ borderBottom: '1px solid #555', width: 100, height: 18 }} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ══════════════════════════════
+            SECTION 3 — رأي المدير
+        ══════════════════════════════ */}
+        <SectionTitle>القسم الثالث: رأي المدير في العذر المقدَّم</SectionTitle>
+
+        <div style={{ border: '1.5px solid #000', borderRadius: 4, padding: '8px 10px', marginBottom: 14, fontSize: 10 }}>
+          {/* Decision checkboxes */}
+          <div style={{ display: 'flex', gap: 40, alignItems: 'center', marginBottom: 12 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'default' }}>
+              <CheckBox checked={formData.director_decision === 'accept'} />
+              <span style={{ fontWeight: 700, fontSize: 11 }}>قبول العذر</span>
+              <span style={{ fontSize: 9, color: '#555' }}>(ولا يُطبَّق الحسم)</span>
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'default' }}>
+              <CheckBox checked={formData.director_decision === 'reject'} />
+              <span style={{ fontWeight: 700, fontSize: 11 }}>رفض العذر</span>
+              <span style={{ fontSize: 9, color: '#555' }}>(ويُطبَّق الحسم وفق الأنظمة)</span>
+            </label>
+          </div>
+
+          {/* Director name + stamp */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 6 }}>
+            <div style={{ fontSize: 10 }}>
+              <div style={{ fontWeight: 700, marginBottom: 4 }}>اسم المدير:</div>
+              <div style={{ borderBottom: '1px solid #555', width: 200, height: 20 }}>
+                <span style={{ paddingRight: 4 }}>{formData.director_name}</span>
+              </div>
+            </div>
+
+            <div style={{ textAlign: 'center', fontSize: 10 }}>
+              <div style={{ fontWeight: 700, marginBottom: 4 }}>التوقيع</div>
+              <div style={{ borderBottom: '1px solid #555', width: 120, height: 20 }} />
+            </div>
+
+            <div style={{ textAlign: 'center', fontSize: 10 }}>
+              <div style={{ fontWeight: 700, marginBottom: 4 }}>التاريخ</div>
+              <div style={{ borderBottom: '1px solid #555', width: 100, height: 20 }} />
+            </div>
+
+            {/* Stamp circle */}
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontWeight: 700, fontSize: 10, marginBottom: 4 }}>الختم الرسمي</div>
+              <div style={{
+                border: '1.5px solid #555',
+                borderRadius: '50%',
+                width: 72,
+                height: 72,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#bbb',
+                fontSize: 9,
+              }}>ختم</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{ borderTop: '1px solid #ccc', paddingTop: 5, textAlign: 'center', fontSize: 8, color: '#777' }}>
+          نموذج رقم 18 — إدارة التعليم بمحافظة جدة — يُحفظ في ملف الموظف
         </div>
       </div>
     </div>
   )
+}
+
+/* ── Helpers ── */
+
+function SectionTitle({ children }) {
+  return (
+    <div style={{
+      background: '#006633',
+      color: '#fff',
+      fontWeight: 700,
+      fontSize: 10,
+      padding: '3px 10px',
+      borderRadius: '3px 3px 0 0',
+      marginBottom: 0,
+    }}>
+      {children}
+    </div>
+  )
+}
+
+function CheckBox({ checked }) {
+  return (
+    <div style={{
+      width: 14,
+      height: 14,
+      border: '1.5px solid #000',
+      borderRadius: 2,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+      background: '#fff',
+    }}>
+      {checked && (
+        <svg viewBox="0 0 12 12" style={{ width: 10, height: 10 }}>
+          <polyline points="2,6 5,9 10,3" fill="none" stroke="#006633" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      )}
+    </div>
+  )
+}
+
+const tdLabel = {
+  fontWeight: 700,
+  background: '#f0f7f0',
+  border: '1px solid #999',
+  padding: '3px 6px',
+  whiteSpace: 'nowrap',
+  fontSize: 10,
+}
+
+const tdValue = {
+  border: '1px solid #999',
+  padding: '3px 6px',
+  fontSize: 10,
+  minWidth: 80,
 }
