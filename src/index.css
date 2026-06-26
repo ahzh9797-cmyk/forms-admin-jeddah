@@ -1,0 +1,125 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  font-family: 'Cairo', 'Noto Naskh Arabic', 'Amiri', Arial, sans-serif;
+}
+
+body {
+  direction: rtl;
+  background-color: #f3f4f6;
+}
+
+/* ===== PRINT STYLES ===== */
+@media print {
+  body {
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .form-page {
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 15mm 20mm !important;
+    width: 100% !important;
+    page-break-after: always;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+}
+
+.print-only {
+  display: none;
+}
+
+/* Official form styles */
+.official-form {
+  background: white;
+  font-family: 'Cairo', 'Noto Naskh Arabic', Arial, sans-serif;
+  direction: rtl;
+}
+
+.form-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.form-table td,
+.form-table th {
+  border: 1px solid #333;
+  padding: 4px 8px;
+  text-align: right;
+}
+
+.form-table th {
+  background-color: #e8f5e9;
+  font-weight: 700;
+}
+
+.underline-field {
+  border-bottom: 1px solid #333;
+  min-width: 120px;
+  display: inline-block;
+  min-height: 20px;
+}
+
+.stamp-box {
+  border: 2px solid #333;
+  min-height: 80px;
+  min-width: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+/* Sidebar navigation */
+.sidebar-link {
+  display: block;
+  padding: 10px 16px;
+  border-radius: 8px;
+  margin-bottom: 4px;
+  text-decoration: none;
+  color: #374151;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.sidebar-link:hover {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.sidebar-link.active {
+  background-color: #006633;
+  color: white;
+}
+
+/* Form number badge */
+.form-badge {
+  background: #006633;
+  color: white;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  margin-left: 8px;
+  flex-shrink: 0;
+}
