@@ -1,314 +1,182 @@
-import { useState, useEffect } from "react";
-import { supabase, C, Btn, Card, Spinner, InstallAppBanner, RoleBadge,
-  useSurveys, useSchoolCount, useUserRole, useAppSettings, usePendingCount,
-  logAction } from "./lib.jsx";
-import PublicFill from "./PublicFill.jsx";
-import TrackingPage, { OpenSurveyTracking } from "./TrackingPage.jsx";
-import { SurveysList, NewSurveyPage, ShareSheet, LoginPage, AnalyticsPage,
-  SchoolsManagementPage, UsersManagementPage, SupervisorsManagementPage,
-  AppSettingsPage, AuditLogPage } from "./Management.jsx";
-import DirectoryPage from "./Directory.jsx";
+import React, { useState } from 'react'
+import Form18 from './forms/Form18'
+import Form19 from './forms/Form19'
+import Form21 from './forms/Form21'
+import FormLeaveBalance from './forms/FormLeaveBalance'
+import FormSupervisorFaris from './forms/FormSupervisorFaris'
+import FormManagerFaris from './forms/FormManagerFaris'
 
-export default function App() {
-  const [user, setUser] = useState(null);
-  const [authChecked, setAuthChecked] = useState(false);
-  const [tab, setTab] = useState("surveys");
-  const [modal, setModal] = useState(null);
-  const { surveys, loading: loadingSurveys, refetch } = useSurveys();
-  const schoolCount = useSchoolCount();
-  const { role, isAdmin, roleError } = useUserRole(user);
-  const pendingCount = usePendingCount(isAdmin);
-  const { settings } = useAppSettings();
-  const [deleteSurveyTarget, setDeleteSurveyTarget] = useState(null);
+const FORMS = [
+  {
+    id: 'form18',
+    number: '18',
+    title: 'نموذج مساءلة تأخر / انصراف',
+    description: 'توثيق مخالفات التأخر والانصراف المبكر',
+    color: 'orange',
+    component: Form18,
+  },
+  {
+    id: 'form19',
+    number: '19',
+    title: 'نموذج حسم ساعات التأخر',
+    description: 'حساب وتوثيق حسم ساعات التأخر الشهرية',
+    color: 'red',
+    component: Form19,
+  },
+  {
+    id: 'form21',
+    number: '21',
+    title: 'قرار حسم غياب',
+    description: 'إصدار قرار رسمي لحسم أيام الغياب',
+    color: 'purple',
+    component: Form21,
+  },
+  {
+    id: 'leave',
+    number: null,
+    title: 'نموذج ترصيد الإجازات',
+    description: 'عرض رصيد الإجازات المتبقي للموظف',
+    color: 'blue',
+    component: FormLeaveBalance,
+  },
+  {
+    id: 'supervisor-faris',
+    number: null,
+    title: 'تصحيح مشرف في فارس',
+    description: 'طلب تصحيح بيانات موظف في نظام فارس (مشرف)',
+    color: 'teal',
+    component: FormSupervisorFaris,
+  },
+  {
+    id: 'manager-faris',
+    number: null,
+    title: 'تصحيح مدير في فارس',
+    description: 'طلب تصحيح بيانات موظف في نظام فارس (مدير)',
+    color: 'indigo',
+    component: FormManagerFaris,
+  },
+]
 
-  async function deleteSurvey(s) {
-    await supabase.from("survey_questions").delete().eq("survey_id", s.id);
-    await supabase.from("survey_responses").delete().eq("survey_id", s.id);
-    await supabase.from("surveys").delete().eq("id", s.id);
-    logAction({ user, action:"delete", table:"surveys", recordId:s.id, recordLabel:s.title });
-    refetch();
-    setDeleteSurveyTarget(null);
-  }
-
-  async function approveSurvey(s) {
-    await supabase.from("surveys").update({ approval_status:"approved" }).eq("id", s.id);
-    logAction({ user, action:"update", table:"surveys", recordId:s.id, recordLabel:`اعتماد: ${s.title}` });
-    refetch();
-  }
-
-  // check public survey link: ?survey=uuid
-  const params = new URLSearchParams(window.location.search);
-  const publicSurveyId = params.get("survey");
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => { setUser(data.session?.user || null); setAuthChecked(true); });
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => setUser(session?.user || null));
-    return () => sub.subscription.unsubscribe();
-  }, []);
-
-  // public survey fill mode — works WITHOUT login
-  if (publicSurveyId) {
-    const survey = surveys.find(s => s.id === publicSurveyId);
-    if (loadingSurveys) return <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center" }}><Spinner size={32}/></div>;
-    if (!survey) return (
-      <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", direction:"rtl", padding:24, textAlign:"center" }}>
-        <p style={{ color:C.muted }}>الاستبيان غير موجود أو غير نشط</p>
-      </div>
-    );
-    return <PublicFill survey={survey} onBack={()=>{}}/>;
-  }
-
-  if (!authChecked) return <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center" }}><Spinner size={32}/></div>;
-
-  if (modal?.type === "tracking") return <TrackingPage survey={modal.data} onBack={()=>setModal(null)}/>;
-
-  if (modal?.type === "new") {
-    return (
-      <div style={{ paddingBottom:80 }}>
-        <NewSurveyPage onSaved={()=>{ refetch(); setModal(null); }} onCancel={()=>setModal(null)} user={user} isAdmin={isAdmin}/>
-      </div>
-    );
-  }
-
-  if (modal?.type === "edit") {
-    return (
-      <div style={{ paddingBottom:80 }}>
-        <NewSurveyPage
-          existingSurvey={modal.data}
-          onSaved={()=>{ refetch(); setModal(null); }}
-          onCancel={()=>setModal(null)}
-          user={user} isAdmin={isAdmin}/>
-      </div>
-    );
-  }
-
-  if (!user) return <LoginPage onLogin={setUser}/>;
-
-  // role still loading (null) — brief spinner to avoid flash of wrong permissions
-  if (role === null) return <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center" }}><Spinner size={36}/></div>;
-
-  const TABS = [
-    {id:"surveys",   i:"📋", l:"الاستبيانات"},
-    {id:"directory", i:"📁", l:"الدليل"},
-    {id:"analytics", i:"📊", l:"إحصائيات"},
-    ...(isAdmin ? [{id:"more",i:"⚙️",l:"المزيد"}] : []),
-  ];
-
-  return (
-    <div style={{ minHeight:"100vh", background:C.bg, direction:"rtl", fontFamily:"'Tajawal','Segoe UI',Tahoma,Arial,sans-serif" }}>
-
-      {/* ── الهيدر الجديد ── */}
-      <div style={{
-        background:`linear-gradient(135deg, ${C.primary} 0%, ${C.primaryDark} 100%)`,
-        padding:"0 16px", color:"#fff",
-        position:"sticky", top:0, zIndex:10,
-        boxShadow:"0 2px 16px rgba(0,107,84,0.25)"
-      }}>
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", paddingTop:12, paddingBottom:12 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-            {settings.logo_url ? (
-              <img src={settings.logo_url} alt="logo"
-                style={{ width:40, height:40, borderRadius:10, objectFit:"contain",
-                  background:"rgba(255,255,255,0.15)", padding:4, backdropFilter:"blur(4px)" }}/>
-            ) : (
-              <div style={{ width:40, height:40, background:"rgba(255,255,255,0.15)", borderRadius:10,
-                display:"flex", alignItems:"center", justifyContent:"center", fontSize:20,
-                backdropFilter:"blur(4px)", border:"1px solid rgba(255,255,255,0.2)" }}>📋</div>
-            )}
-            <div>
-              <div style={{ fontWeight:800, fontSize:16, display:"flex", alignItems:"center", gap:8, letterSpacing:"-0.01em" }}>
-                {settings.app_name || "منظومة الاستبيانات"}
-                <RoleBadge role={role}/>
-              </div>
-              <div style={{ fontSize:11, opacity:0.75, marginTop:2, fontWeight:500 }}>
-                {settings.app_subtitle || "إدارة التعليم — جدة"} · {schoolCount} مدرسة
-              </div>
-            </div>
-          </div>
-          <button onClick={()=>supabase.auth.signOut()} style={{
-            background:"rgba(255,255,255,0.15)", border:"1px solid rgba(255,255,255,0.25)",
-            color:"#fff", borderRadius:10, padding:"8px 16px", fontSize:13, cursor:"pointer",
-            fontFamily:"inherit", fontWeight:600, backdropFilter:"blur(4px)",
-            transition:"background 0.15s"
-          }}>خروج</button>
-        </div>
-        {/* موجة زخرفية */}
-        <svg viewBox="0 0 375 12" style={{ display:"block", marginBottom:-1 }} preserveAspectRatio="none">
-          <path d="M0,0 C100,12 275,12 375,0 L375,12 L0,12 Z" fill={C.bg}/>
-        </svg>
-      </div>
-
-      <div style={{ paddingBottom:88 }}>
-        {tab==="surveys" && <InstallAppBanner/>}
-        {tab==="surveys" && (
-          <SurveysList surveys={surveys} loading={loadingSurveys} schoolCount={schoolCount} isAdmin={isAdmin}
-            onNew={()=>setModal({type:"new"})}
-            onShare={s=>setModal({type:"share",data:s})}
-            onTrack={s=>setModal({type:"tracking",data:s})}
-            onEdit={s=>setModal({type:"edit",data:s})}
-            onDelete={s=>setDeleteSurveyTarget(s)}
-            onApprove={approveSurvey}/>
-        )}
-        {tab==="directory" && <DirectoryPage user={user} isAdmin={isAdmin}/>}
-        {tab==="analytics" && <AnalyticsPage surveys={surveys} onNavigate={setTab}/> }
-        {tab==="more" && isAdmin && (
-          <div style={{ padding:16 }}>
-            <h2 style={{ margin:"0 0 16px", fontSize:18, color:C.dark, fontWeight:800 }}>الإعدادات</h2>
-            {[
-              { icon:"👥", title:"إدارة المستخدمين", sub:"الصلاحيات والحسابات", type:"users", accent:C.primary,
-                badge: pendingCount > 0 ? pendingCount : null },
-              { icon:"👤", title:"إدارة المشرفين", sub:"إضافة وإرسال الاستبيانات", type:"supervisors", accent:"#7B2D8B" },
-              { icon:"📜", title:"سجل التدقيق", sub:"كل عمليات النظام", type:"auditlog", accent:C.accent },
-              { icon:"🎨", title:"إعدادات التطبيق", sub:"اللوغو والعناوين", type:"settings", accent:C.primaryLight },
-            ].map(item => (
-              <div key={item.type} onClick={()=>setModal({type:item.type})}
-                className="card-hover"
-                style={{ background:C.white, borderRadius:16, border:`1px solid ${C.border}`,
-                  padding:"14px 16px", marginBottom:10, cursor:"pointer",
-                  display:"flex", alignItems:"center", gap:14,
-                  boxShadow:"0 2px 8px rgba(0,0,0,0.06)",
-                  borderRight:`4px solid ${item.accent}` }}>
-                <div style={{ width:44, height:44, background:`${item.accent}15`, borderRadius:12,
-                  display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, flexShrink:0 }}>
-                  {item.icon}
-                </div>
-                <div style={{ flex:1 }}>
-                  <p style={{ margin:0, fontSize:14, fontWeight:700, color:C.dark }}>{item.title}</p>
-                  <p style={{ margin:"2px 0 0", fontSize:12, color:C.muted }}>{item.sub}</p>
-                </div>
-                {item.badge && (
-                  <span style={{ background:C.danger, color:"#fff", borderRadius:20, fontSize:12,
-                    fontWeight:700, padding:"3px 10px", boxShadow:"0 2px 6px rgba(197,48,48,0.4)" }}>
-                    {item.badge} 🔔
-                  </span>
-                )}
-                <span style={{ color:C.subtle, fontSize:18, flexShrink:0 }}>‹</span>
-              </div>
-            ))}
-            <div style={{ background:C.primaryBg, borderRadius:16, padding:16, marginTop:6,
-              border:`1px solid ${C.primary}20` }}>
-              <p style={{ margin:"0 0 8px", fontSize:13, fontWeight:700, color:C.primary }}>📲 تثبيت التطبيق</p>
-              <p style={{ margin:"0 0 6px", fontSize:12, color:C.muted, lineHeight:1.8 }}>
-                <strong>آيفون:</strong> Safari ← زر المشاركة ← "إضافة إلى الشاشة الرئيسية"
-              </p>
-              <p style={{ margin:0, fontSize:12, color:C.muted, lineHeight:1.8 }}>
-                <strong>أندرويد:</strong> ستظهر رسالة تثبيت تلقائياً
-              </p>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ── شريط التنقل السفلي الجديد ── */}
-      <div style={{
-        position:"fixed", bottom:0, left:0, right:0,
-        background:C.white,
-        borderTop:`1px solid ${C.border}`,
-        display:"flex", zIndex:10,
-        boxShadow:"0 -4px 20px rgba(0,0,0,0.08)",
-        paddingBottom:"env(safe-area-inset-bottom)"
-      }}>
-        {TABS.map(item => (
-          <button key={item.id} onClick={()=>setTab(item.id)} style={{
-            flex:1, padding:"10px 0 8px", border:"none", background:"none", cursor:"pointer",
-            display:"flex", flexDirection:"column", alignItems:"center", gap:3,
-            color: tab===item.id ? C.primary : C.subtle,
-            fontFamily:"inherit", position:"relative",
-            transition:"color 0.15s"
-          }}>
-            {tab===item.id && (
-              <span style={{
-                position:"absolute", top:0, left:"50%", transform:"translateX(-50%)",
-                width:32, height:3, background:C.primary, borderRadius:"0 0 4px 4px"
-              }}/>
-            )}
-            <span style={{
-              fontSize:22,
-              position:"relative",
-              filter: tab===item.id ? "none" : "grayscale(40%)",
-              transform: tab===item.id ? "scale(1.1)" : "scale(1)",
-              transition:"transform 0.15s"
-            }}>
-              {item.i}
-              {item.id==="more" && pendingCount > 0 && (
-                <span style={{
-                  position:"absolute", top:-4, right:-10,
-                  background:C.danger, color:"#fff",
-                  borderRadius:10, fontSize:9, fontWeight:700,
-                  padding:"1px 5px", minWidth:16, textAlign:"center",
-                  border:"2px solid #fff", lineHeight:1.4,
-                  boxShadow:"0 1px 4px rgba(197,48,48,0.5)"
-                }}>{pendingCount}</span>
-              )}
-            </span>
-            <span style={{ fontSize:10, fontWeight:tab===item.id?700:500, letterSpacing:"0.01em" }}>{item.l}</span>
-          </button>
-        ))}
-      </div>
-
-      {modal?.type==="share" && <ShareSheet survey={modal.data} onClose={()=>setModal(null)}/>}
-
-      {modal?.type==="users" && isAdmin && (
-        <div style={{ position:"fixed", inset:0, background:C.bg, zIndex:50, overflowY:"auto" }}>
-          <div style={{ background:C.primary, padding:"14px 16px", color:"#fff", display:"flex", alignItems:"center", gap:10, position:"sticky", top:0 }}>
-            <button onClick={()=>setModal(null)} style={{ background:"none", border:"none", color:"#fff", fontSize:20, cursor:"pointer" }}>←</button>
-            <span style={{ fontWeight:800, fontSize:15 }}>إدارة المستخدمين</span>
-          </div>
-          <UsersManagementPage currentUser={user}/>
-        </div>
-      )}
-
-      {modal?.type==="auditlog" && isAdmin && (
-        <div style={{ position:"fixed", inset:0, background:C.bg, zIndex:50, overflowY:"auto" }}>
-          <div style={{ background:C.primary, padding:"14px 16px", color:"#fff", display:"flex", alignItems:"center", gap:10, position:"sticky", top:0 }}>
-            <button onClick={()=>setModal(null)} style={{ background:"none", border:"none", color:"#fff", fontSize:20, cursor:"pointer" }}>←</button>
-            <span style={{ fontWeight:800, fontSize:15 }}>سجل التدقيق</span>
-          </div>
-          <AuditLogPage/>
-        </div>
-      )}
-
-      {modal?.type==="supervisors" && isAdmin && (
-        <div style={{ position:"fixed", inset:0, background:C.bg, zIndex:50, overflowY:"auto" }}>
-          <div style={{ background:C.primary, padding:"14px 16px", color:"#fff", display:"flex", alignItems:"center", gap:10, position:"sticky", top:0 }}>
-            <button onClick={()=>setModal(null)} style={{ background:"none", border:"none", color:"#fff", fontSize:20, cursor:"pointer" }}>←</button>
-            <span style={{ fontWeight:800, fontSize:15 }}>إدارة المشرفين</span>
-          </div>
-          <SupervisorsManagementPage user={user}/>
-        </div>
-      )}
-
-      {modal?.type==="settings" && isAdmin && (
-        <div style={{ position:"fixed", inset:0, background:C.bg, zIndex:50, overflowY:"auto" }}>
-          <div style={{ background:C.primary, padding:"14px 16px", color:"#fff", display:"flex", alignItems:"center", gap:10, position:"sticky", top:0 }}>
-            <button onClick={()=>setModal(null)} style={{ background:"none", border:"none", color:"#fff", fontSize:20, cursor:"pointer" }}>←</button>
-            <span style={{ fontWeight:800, fontSize:15 }}>إعدادات التطبيق</span>
-          </div>
-          <AppSettingsPage onSaved={()=>setModal(null)}/>
-        </div>
-      )}
-
-      {deleteSurveyTarget && (
-        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:100, display:"flex",
-          alignItems:"center", justifyContent:"center", padding:20, direction:"rtl" }}>
-          <div style={{ background:C.white, borderRadius:16, padding:22, width:"100%", maxWidth:360 }}>
-            <p style={{ textAlign:"center", fontSize:16, fontWeight:700, color:C.dark, margin:"0 0 6px" }}>
-              حذف الاستبيان؟
-            </p>
-            <p style={{ textAlign:"center", color:C.danger, fontSize:13, fontWeight:700, margin:"0 0 6px" }}>
-              {deleteSurveyTarget.title}
-            </p>
-            <p style={{ textAlign:"center", color:C.muted, fontSize:12, margin:"0 0 16px" }}>
-              سيُحذف الاستبيان وجميع إجاباته بشكل نهائي ولا يمكن التراجع.
-            </p>
-            <div style={{ display:"flex", gap:10 }}>
-              <Btn full variant="secondary" onClick={()=>setDeleteSurveyTarget(null)}>إلغاء</Btn>
-              <Btn full variant="danger" onClick={()=>deleteSurvey(deleteSurveyTarget)}>🗑️ حذف نهائياً</Btn>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+const COLOR_MAP = {
+  orange: { bg: 'bg-orange-100', text: 'text-orange-700', badge: 'bg-orange-500', border: 'border-orange-300', hover: 'hover:border-orange-400' },
+  red:    { bg: 'bg-red-100',    text: 'text-red-700',    badge: 'bg-red-500',    border: 'border-red-300',    hover: 'hover:border-red-400' },
+  purple: { bg: 'bg-purple-100', text: 'text-purple-700', badge: 'bg-purple-500', border: 'border-purple-300', hover: 'hover:border-purple-400' },
+  blue:   { bg: 'bg-blue-100',   text: 'text-blue-700',   badge: 'bg-blue-500',   border: 'border-blue-300',   hover: 'hover:border-blue-400' },
+  teal:   { bg: 'bg-teal-100',   text: 'text-teal-700',   badge: 'bg-teal-500',   border: 'border-teal-300',   hover: 'hover:border-teal-400' },
+  indigo: { bg: 'bg-indigo-100', text: 'text-indigo-700', badge: 'bg-indigo-500', border: 'border-indigo-300', hover: 'hover:border-indigo-400' },
 }
 
+export default function App() {
+  const [activeForm, setActiveForm] = useState(null)
+
+  const current = activeForm ? FORMS.find(f => f.id === activeForm) : null
+  const ActiveComponent = current?.component
+
+  return (
+    <div className="min-h-screen bg-gray-100" dir="rtl">
+      {/* Header */}
+      <header className="no-print bg-green-800 text-white shadow-lg">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="bg-white rounded-full p-1.5">
+              <svg viewBox="0 0 40 40" className="w-8 h-8">
+                <circle cx="20" cy="20" r="19" fill="none" stroke="#006633" strokeWidth="1.5"/>
+                <text x="20" y="17" textAnchor="middle" fontSize="5" fill="#006633" fontWeight="bold">وزارة</text>
+                <text x="20" y="24" textAnchor="middle" fontSize="5" fill="#006633" fontWeight="bold">التعليم</text>
+              </svg>
+            </div>
+            <div>
+              <div className="font-bold text-lg leading-5">إدارة التعليم بمحافظة جدة</div>
+              <div className="text-green-200 text-xs">نظام النماذج الرسمية</div>
+            </div>
+          </div>
+          {activeForm && (
+            <button
+              onClick={() => setActiveForm(null)}
+              className="bg-white text-green-800 px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-green-50 transition-colors"
+            >
+              ← العودة للرئيسية
+            </button>
+          )}
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 py-6">
+        {!activeForm ? (
+          /* HOME PAGE */
+          <>
+            {/* Welcome Banner */}
+            <div className="bg-white border border-green-200 rounded-2xl p-6 mb-8 flex items-center gap-4 shadow-sm">
+              <div className="bg-green-100 rounded-full p-4">
+                <svg className="w-10 h-10 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-800 mb-1">مرحباً بك في نظام النماذج الرسمية</h2>
+                <p className="text-gray-600 text-sm">اختر النموذج المطلوب، وأدخل رقم الهوية الوطنية لجلب بيانات الموظف تلقائياً من قاعدة البيانات، ثم اطبع النموذج.</p>
+              </div>
+            </div>
+
+            {/* Forms Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {FORMS.map(form => {
+                const c = COLOR_MAP[form.color]
+                return (
+                  <button
+                    key={form.id}
+                    onClick={() => setActiveForm(form.id)}
+                    className={`text-right bg-white border-2 ${c.border} ${c.hover} rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200 group`}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      {form.number ? (
+                        <span className={`${c.badge} text-white text-xs font-bold px-3 py-1 rounded-full`}>
+                          نموذج {form.number}
+                        </span>
+                      ) : (
+                        <span className={`${c.badge} text-white text-xs font-bold px-3 py-1 rounded-full`}>
+                          نموذج
+                        </span>
+                      )}
+                      <div className={`${c.bg} rounded-lg p-2 group-hover:scale-110 transition-transform`}>
+                        <svg className={`w-5 h-5 ${c.text}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <h3 className="font-bold text-gray-800 mb-1 text-sm">{form.title}</h3>
+                    <p className="text-gray-500 text-xs leading-5">{form.description}</p>
+                    <div className={`mt-3 text-xs font-bold ${c.text} flex items-center gap-1`}>
+                      <span>فتح النموذج</span>
+                      <span>←</span>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Info footer */}
+            <div className="mt-8 text-center text-xs text-gray-400">
+              يتم جلب بيانات الموظفين تلقائياً من جداول supervisors و vice_principals في قاعدة بيانات Supabase
+            </div>
+          </>
+        ) : (
+          /* FORM PAGE */
+          <div>
+            <div className="no-print mb-4 flex items-center gap-3">
+              <button
+                onClick={() => setActiveForm(null)}
+                className="text-green-700 hover:text-green-900 text-sm font-bold"
+              >
+                ← الرئيسية
+              </button>
+              <span className="text-gray-400">/</span>
+              <span className="text-gray-700 text-sm font-bold">{current?.title}</span>
+            </div>
+            {ActiveComponent && <ActiveComponent />}
+          </div>
+        )}
+      </main>
+    </div>
+  )
+}
