@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import Form18 from './forms/Form18'
+import Form18Unified from './forms/Form18Unified'
 import Form19 from './forms/Form19'
 import Form21 from './forms/Form21'
 import FormLeaveBalance from './forms/FormLeaveBalance'
@@ -8,7 +8,7 @@ import FormManagerFaris from './forms/FormManagerFaris'
 import ElectronicStatements from './forms/ElectronicStatements'
 
 const FORMS = [
-  { id: 'form18', number: '18', title: 'نموذج مساءلة تأخر / انصراف', description: 'توثيق مخالفات التأخر والانصراف المبكر', color: 'orange', component: Form18 },
+  { id: 'form18', number: '18', title: 'نموذج مساءلة تأخر / انصراف', description: 'مساءلة إلكترونية موحدة من الموظف حتى اعتماد المدير', color: 'orange', component: Form18Unified },
   { id: 'form19', number: '19', title: 'نموذج حسم ساعات التأخر', description: 'حساب وتوثيق حسم ساعات التأخر الشهرية', color: 'red', component: Form19 },
   { id: 'form21', number: '21', title: 'قرار حسم غياب', description: 'إصدار قرار رسمي لحسم أيام الغياب', color: 'purple', component: Form21 },
   { id: 'leave', number: null, title: 'نموذج ترصيد الإجازات', description: 'عرض رصيد الإجازات المتبقي للموظف', color: 'blue', component: FormLeaveBalance },
@@ -29,8 +29,10 @@ const COLOR_MAP = {
 
 export default function App() {
   const publicStatementRoute = window.location.hash.startsWith('#/statement/')
-  const [activeForm, setActiveForm] = useState(publicStatementRoute ? 'electronic-statements' : null)
-  const current = activeForm ? FORMS.find(f => f.id === activeForm) : null
+  const publicForm18Route = window.location.hash.startsWith('#/form18/')
+  const publicRoute = publicStatementRoute || publicForm18Route
+  const [activeForm, setActiveForm] = useState(publicForm18Route ? 'form18' : publicStatementRoute ? 'electronic-statements' : null)
+  const current = activeForm ? FORMS.find(form => form.id === activeForm) : null
   const ActiveComponent = current?.component
 
   return (
@@ -50,9 +52,7 @@ export default function App() {
               <div className="text-green-200 text-xs">نظام النماذج الرسمية</div>
             </div>
           </div>
-          {activeForm && !publicStatementRoute && (
-            <button onClick={() => setActiveForm(null)} className="bg-white text-green-800 px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-green-50 transition-colors">← العودة للرئيسية</button>
-          )}
+          {activeForm && !publicRoute && <button onClick={() => setActiveForm(null)} className="bg-white text-green-800 px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-green-50 transition-colors">← العودة للرئيسية</button>}
         </div>
       </header>
 
@@ -61,52 +61,30 @@ export default function App() {
           <>
             <div className="bg-white border border-green-200 rounded-2xl p-6 mb-8 flex items-center gap-4 shadow-sm">
               <div className="bg-green-100 rounded-full p-4">
-                <svg className="w-10 h-10 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
+                <svg className="w-10 h-10 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
               </div>
-              <div>
-                <h2 className="text-xl font-bold text-gray-800 mb-1">مرحباً بك في نظام النماذج الرسمية</h2>
-                <p className="text-gray-600 text-sm">اختر النموذج المطلوب، أو افتح إدارة الإفادات الإلكترونية لإنشاء رابط إفادة وتوقيع حي للموظف.</p>
-              </div>
+              <div><h2 className="text-xl font-bold text-gray-800 mb-1">مرحباً بك في نظام النماذج الرسمية</h2><p className="text-gray-600 text-sm">اختر النموذج المطلوب، أو افتح إدارة الإفادات الإلكترونية لإنشاء رابط إفادة وتوقيع حي للموظف.</p></div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {FORMS.map(form => {
-                const c = COLOR_MAP[form.color]
+                const colors = COLOR_MAP[form.color]
                 return (
-                  <button key={form.id} onClick={() => setActiveForm(form.id)} className={`text-right bg-white border-2 ${c.border} ${c.hover} rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200 group`}>
+                  <button key={form.id} onClick={() => setActiveForm(form.id)} className={`text-right bg-white border-2 ${colors.border} ${colors.hover} rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200 group`}>
                     <div className="flex items-start justify-between mb-3">
-                      <span className={`${c.badge} text-white text-xs font-bold px-3 py-1 rounded-full`}>{form.number ? `نموذج ${form.number}` : form.id === 'electronic-statements' ? 'إدارة إلكترونية' : 'نموذج'}</span>
-                      <div className={`${c.bg} rounded-lg p-2 group-hover:scale-110 transition-transform`}>
-                        <svg className={`w-5 h-5 ${c.text}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          {form.id === 'electronic-statements' ? (
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5h2m-1-1v2m6 3v10a2 2 0 01-2 2H8a2 2 0 01-2-2V5a2 2 0 012-2h5l5 5zM9 14c1.5-2 3.5 2 6-1" />
-                          ) : (
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          )}
-                        </svg>
-                      </div>
+                      <span className={`${colors.badge} text-white text-xs font-bold px-3 py-1 rounded-full`}>{form.number ? `نموذج ${form.number}` : form.id === 'electronic-statements' ? 'إدارة إلكترونية' : 'نموذج'}</span>
+                      <div className={`${colors.bg} rounded-lg p-2 group-hover:scale-110 transition-transform`}><svg className={`w-5 h-5 ${colors.text}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg></div>
                     </div>
-                    <h3 className="font-bold text-gray-800 mb-1 text-sm">{form.title}</h3>
-                    <p className="text-gray-500 text-xs leading-5">{form.description}</p>
-                    <div className={`mt-3 text-xs font-bold ${c.text} flex items-center gap-1`}><span>{form.id === 'electronic-statements' ? 'فتح الإدارة' : 'فتح النموذج'}</span><span>←</span></div>
+                    <h3 className="font-bold text-gray-800 mb-1 text-sm">{form.title}</h3><p className="text-gray-500 text-xs leading-5">{form.description}</p><div className={`mt-3 text-xs font-bold ${colors.text} flex items-center gap-1`}><span>فتح النموذج</span><span>←</span></div>
                   </button>
                 )
               })}
             </div>
-
             <div className="mt-8 text-center text-xs text-gray-400">يتم جلب بيانات الموظفين تلقائياً من قاعدة بيانات Supabase</div>
           </>
         ) : (
           <div>
-            {!publicStatementRoute && (
-              <div className="no-print mb-4 flex items-center gap-3">
-                <button onClick={() => setActiveForm(null)} className="text-green-700 hover:text-green-900 text-sm font-bold">← الرئيسية</button>
-                <span className="text-gray-400">/</span>
-                <span className="text-gray-700 text-sm font-bold">{current?.title}</span>
-              </div>
-            )}
+            {!publicRoute && <div className="no-print mb-4 flex items-center gap-3"><button onClick={() => setActiveForm(null)} className="text-green-700 hover:text-green-900 text-sm font-bold">← الرئيسية</button><span className="text-gray-400">/</span><span className="text-gray-700 text-sm font-bold">{current?.title}</span></div>}
             {ActiveComponent && <ActiveComponent />}
           </div>
         )}
