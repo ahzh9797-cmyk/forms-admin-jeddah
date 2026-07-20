@@ -17,11 +17,15 @@ create table if not exists public.response_transactions (
   manager_name text,
   notes text,
   reason text,
+  form_payload jsonb not null default '{}'::jsonb,
   payload jsonb not null default '{}'::jsonb,
   metadata jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.response_transactions
+  add column if not exists form_payload jsonb not null default '{}'::jsonb;
 
 create index if not exists response_transactions_response_id_idx
   on public.response_transactions (response_id);
